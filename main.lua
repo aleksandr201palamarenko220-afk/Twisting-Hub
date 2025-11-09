@@ -1,9 +1,20 @@
+--[[======================================================
+   ⚙️ XERA HUB — AIMBOT + ESP (v1.0)
+   by Nobody
+========================================================]]
+
+------------------------------------------------------------
+-- 🧩 Services
+------------------------------------------------------------
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local Camera = workspace.CurrentCamera
 local LocalPlayer = Players.LocalPlayer
 
+------------------------------------------------------------
+-- 🧱 Libraries
+------------------------------------------------------------
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
 ------------------------------------------------------------
@@ -226,4 +237,141 @@ RunService.RenderStepped:Connect(function()
 	if not (Aimbot_Enabled and Holding) then return end
 	local target = GetClosestTarget()
 	if target then SmoothAim(target.Position) end
+end)
+
+------------------------------------------------------------
+-- 🧠 PLAYER ESP
+------------------------------------------------------------
+local function CreatePlayerESP(player)
+	if PlayerDrawings[player] then return end
+	local box = Drawing.new("Square")
+	box.Filled = false
+	box.Visible = false
+
+	local nameText = Drawing.new("Text")
+	nameText.Center = true
+	nameText.Size = 16
+	nameText.Font = 2
+	nameText.Outline = true
+	nameText.Visible = false
+
+	local hpText = Drawing.new("Text")
+	hpText.Center = true
+	hpText.Size = 14
+	hpText.Font = 2
+	hpText.Outline = true
+	hpText.Visible = false
+
+	local distText = Drawing.new("Text")
+	distText.Center = true
+	distText.Size = 14
+	distText.Font = 2
+	distText.Outline = true
+	distText.Visible = false
+
+	local tracer = Drawing.new("Line")
+	tracer.Visible = false
+	tracer.Thickness = 1.5
+
+	PlayerDrawings[player] = {
+		Box = box,
+		Name = nameText,
+		HP = hpText,
+		Distance = distText,
+		Tracer = tracer,
+	}
+end
+
+local function RemovePlayerESP(player)
+	local drawings = PlayerDrawings[player]
+	if not drawings then return end
+	for _, obj in pairs(drawings) do
+		if obj and obj.Remove then pcall(function() obj:Remove() end) end
+	end
+	PlayerDrawings[player] = nil
+end
+
+Players.PlayerRemoving:Connect(RemovePlayerESP)
+Players.PlayerAdded:Connect(CreatePlayerESP)
+for _, plr in ipairs(Players:GetPlayers()) do
+	if plr ~= LocalPlayer then CreatePlayerESP(plr) end
+end
+
+------------------------------------------------------------
+-- 🔁 ESP Update (RenderStepped)
+------------------------------------------------------------
+RunService.RenderStepped:Connect(function()
+	for _, player in ipairs(Players:GetPlayers()) do
+		if player == LocalPlayer then continue end
+		local char = player.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+
+		local drawings = PlayerDrawings[player]
+		if not drawings then
+			CreatePlayerESP(player)
+			drawings = PlayerDrawings[player]
+		end
+
+		if not Can_Player_Esp or not char or not hum or hum.Health <= 0 or not root then
+			for _, obj in pairs(drawings) do obj.Visible = false end
+			continue
+		end
+
+		if Team_Check and player.Team == LocalPlayer.Team then
+			for _, obj in pairs(drawings) do obj.Visible = false end
+			continue
+		end
+
+		local screenPos, visible = Camera:WorldToViewportPoint(root.Position)
+		if not visible then
+			for _, obj in pairs(drawings) do obj.Visible = false end
+			continue
+		end
+
+		-- Масштаб ESP
+		local scale = math.clamp(2000 / screenPos.Z, 30, 300)
+		local box = drawings.Box
+		box.Size = Vector2.new(scale / 2, scale)
+		box.Position = Vector2.new(screenPos.X - scale / 4, screenPos.Y - scale / 2)
+		box.Color = Player_Esp_Color
+		box.Thickness = Player_Esp_Thickness
+		box.Visible = true
+
+		-- Имя
+		local nameText = drawings.Name
+		nameText.Visible = Show_Player_Names
+		nameText.Text = player.Name
+		nameText.Color = Player_Esp_Color
+		nameText.Position = Vector2.new(screenPos.X, screenPos.Y - scale / 2 - 15)
+
+		-- HP
+		local hpText = drawings.HP
+		hpText.Visible = Show_Player_HP
+		hpText.Text = string.format("HP: %d", math.floor(hum.Health))
+		hpText.Color = Color3.fromRGB(255, 255, 255)
+		hpText.Position = Vector2.new(screenPos.X, screenPos.Y + scale / 2 + 5)
+
+		-- Дистанция
+		local distText = drawings.Distance
+		distText.Visible = Show_Player_Distance
+		if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+			local dist = (LocalPlayer.Character.HumanoidRootPart.Position - root.Position).Magnitude
+			distText.Text = string.format("%.1f m", dist)
+		else
+			distText.Text = ""
+		end
+		distText.Color = Color3.fromRGB(180, 180, 180)
+		distText.Position = Vector2.new(screenPos.X, screenPos.Y + scale / 2 + 22)
+
+		-- Трасеры
+		local tracer = drawings.Tracer
+		tracer.Visible = Show_Tracers
+		if Show_Tracers then
+			local screenBottom = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y - 30)
+			tracer.From = screenBottom
+			tracer.To = Vector2.new(screenPos.X, screenPos.Y)
+			tracer.Color = Player_Esp_Color
+		end
+	end
 end)
