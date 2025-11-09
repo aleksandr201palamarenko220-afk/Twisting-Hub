@@ -5,7 +5,6 @@ local Camera = workspace.CurrentCamera
 
 local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
 
--- ⚙️ Настройки ESP
 local Can_Player_Esp = false
 local Show_Player_Names = true
 local Show_Player_HP = true
@@ -13,7 +12,6 @@ local Team_Check = false
 local Player_Esp_Color = Color3.fromRGB(0, 255, 0)
 local Player_Esp_Thickness = 1
 
--- ⚙️ Настройки AIMBOT
 local Aimbot_Enabled = false
 local Aimbot_TeamCheck = true
 local Aimbot_Smoothness = 0.25
@@ -28,10 +26,10 @@ local AimTarget = nil
 -- 🪟 UI
 ------------------------------------------------------------
 local Window = Rayfield:CreateWindow({
-	Name = "Xera Hub",
-	LoadingTitle = "Xera Hub",
+	Name = "Twisting Hub",
+	LoadingTitle = "Twisting Hub",
 	LoadingSubtitle = "by Nobody",
-	Theme = "Dark Blue",
+	Theme = "Serenity",
 	ToggleUIKeybind = "U",
 })
 
